@@ -13,4 +13,9 @@ const eslintConfig = [
   ..."extends" ["next"],
 ];
 
-export default eslintConfig;
+import next from 'eslint-config-next';
+
+export default [
+  ...next(),
+  // your overrides or additional config objects
+];
