@@ -1,0 +1,180 @@
+// prisma/schema.prisma
+
+// 1. Datenbankverbindung
+datasource db {
+  provider = "postgresql"
+  url      = env(postgres://neondb_owner:npg_FsCO6X3PbZpN@ep-green-sun-adm15zgi-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"")
+}
+
+// 2. Prisma Client-Generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 3. Modelle
+
+model Company {
+  id        Int        @id @default(autoincrement())
+  name      String
+  domain    String?
+  users     User[]     @relation("CompanyUsers")
+  vehicles  Vehicle[]  @relation("CompanyVehicles")
+  events    Event[]    @relation("CompanyEvents")
+  customers Customer[] @relation("CompanyCustomers")
+  invoices  Invoice[]  @relation("CompanyInvoices")
+  reminders Reminder[] @relation("CompanyReminders")
+  roles     Role[]     @relation("CompanyRoles")
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String
+  timezone     String?
+
+  company      Company?      @relation("CompanyUsers", fields: [companyId], references: [id])
+  companyId    Int?
+
+  events       Event[]       @relation("UserEvents")
+  invitations  Invitation[]  @relation("UserInvitations")
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+
+  company     Company?   @relation("CompanyRoles", fields: [companyId], references: [id])
+  companyId   Int?
+
+  // Optional: Many-to-many mit Permissions
+  permissions RolePermission[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  action      String
+  resource    String
+
+  // Optional: Many-to-many mit Roles
+  roles       RolePermission[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+model RolePermission {
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       Int
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId Int
+
+  @@id([roleId, permissionId])
+}
+
+model Event {
+  id          Int           @id @default(autoincrement())
+  title       String
+  description String?
+  type        String?
+  start       DateTime
+  end         DateTime
+  location    String?
+
+  createdBy   User          @relation("UserEvents", fields: [createdById], references: [id])
+  createdById Int
+
+  company     Company       @relation("CompanyEvents", fields: [companyId], references: [id])
+  companyId   Int
+
+  invitations Invitation[]  @relation("EventInvitations")
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Vehicle {
+  id           Int      @id @default(autoincrement())
+  licensePlate String   @unique
+  model        String
+
+  company      Company  @relation("CompanyVehicles", fields: [companyId], references: [id])
+  companyId    Int
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Invitation {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("pending")
+
+  event     Event    @relation("EventInvitations", fields: [eventId], references: [id])
+  eventId   Int
+
+  user      User     @relation("UserInvitations", fields: [userId], references: [id])
+  userId    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String
+  address   String?
+  email     String
+  phone     String?
+
+  company   Company?  @relation("CompanyCustomers", fields: [companyId], references: [id])
+  companyId Int?
+
+  invoices  Invoice[] @relation("CustomerInvoices")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Invoice {
+  id          Int       @id @default(autoincrement())
+  amount      Float
+  status      String    @default("pending")
+  dueDate     DateTime
+  description String?
+
+  customer    Customer  @relation("CustomerInvoices", fields: [customerId], references: [id])
+  customerId  Int
+
+  company     Company?  @relation("CompanyInvoices", fields: [companyId], references: [id])
+  companyId   Int?
+
+  reminders   Reminder[]@relation("InvoiceReminders")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Reminder {
+  id        Int      @id @default(autoincrement())
+  sentDate  DateTime
+  status    String   @default("sent")
+
+  invoice   Invoice  @relation("InvoiceReminders", fields: [invoiceId], references: [id])
+  invoiceId Int
+
+  company   Company? @relation("CompanyReminders", fields: [companyId], references: [id])
+  companyId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
