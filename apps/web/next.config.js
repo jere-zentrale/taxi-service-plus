@@ -8,7 +8,7 @@
  */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  
 
   // Hier kannst du ggf. einen Basis-Pfad festlegen, z.B. if deployed in a subdirectory
   // basePath: '',
